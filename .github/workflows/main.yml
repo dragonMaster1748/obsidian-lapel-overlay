@@ -1,28 +1,60 @@
-name: CI
+name: Validate plugin
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
-  lint-and-test:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
+        with:
+          version: 10.22.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22.x"
-          cache: "pnpm"
+          cache: pnpm
 
-      - name: Install modules
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Lint
         run: pnpm run lint
+
+      - name: Compile production build
+        run: pnpm run build:ci
+
+      - name: Verify required plugin files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s main.js
+          test -s manifest.json
+          test -s styles.css
+          node -e 'const m=require("./manifest.json"); if(m.isDesktopOnly !== false) throw new Error("manifest must remain mobile-compatible (isDesktopOnly=false)"); if(m.id !== "lapel-overlay") throw new Error("unexpected plugin id");'
+
+      - name: Assemble installable plugin folder
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          mkdir -p dist/lapel-overlay
+          cp main.js manifest.json styles.css dist/lapel-overlay/
+
+      - name: Upload installable folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: lapel-overlay
+          path: dist/lapel-overlay
+          if-no-files-found: error
+          retention-days: 30
