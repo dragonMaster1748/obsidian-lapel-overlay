@@ -20,8 +20,7 @@ class HeadingMarkerWidget extends WidgetType {
   }
 
   toDOM() {
-    const markerEl = document.createElement("span");
-    markerEl.className = MARKER_CSS_CLASS;
+    const markerEl = createSpan({ cls: MARKER_CSS_CLASS });
     markerEl.dataset.level = String(this.headingLevel);
     markerEl.setAttribute("aria-label", `Heading ${this.headingLevel}. Activate to change heading level.`);
     markerEl.setAttribute("role", "button");
