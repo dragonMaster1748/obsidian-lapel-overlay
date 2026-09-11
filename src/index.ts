@@ -11,7 +11,6 @@ export default class LapelPlugin extends Plugin {
     await this.loadSettings();
     this.extensions.push(
       headingMarkerPlugin({
-        showBeforeLineNumbers: this.settings.showBeforeLineNumbers,
         showInSourceMode: this.settings.showInSourceMode,
       })
     );
@@ -33,15 +32,10 @@ export default class LapelPlugin extends Plugin {
   ): Promise<void> {
     const changedSettings = tx(this.settings);
     const newSettings = Object.assign({}, this.settings, changedSettings);
-    if (
-      this.settings.showBeforeLineNumbers !== newSettings.showBeforeLineNumbers ||
-      this.settings.showInSourceMode !== newSettings.showInSourceMode
-    ) {
-      const updatedExt = headingMarkerPlugin({
-        showBeforeLineNumbers: newSettings.showBeforeLineNumbers,
+    if (this.settings.showInSourceMode !== newSettings.showInSourceMode) {
+      this.extensions[0] = headingMarkerPlugin({
         showInSourceMode: newSettings.showInSourceMode,
       });
-      this.extensions[0] = updatedExt;
       this.app.workspace.updateOptions();
     }
 
