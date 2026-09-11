@@ -1,54 +1,58 @@
-/*
-  XXX: Hide gutters inside table cell editor
-  Remove this hack once there's a proper way to not register the editor extension
-  inside table cells.
-*/
-.table-cell-wrapper .cm-gutters {
-  display: none;
-}
-
-.cm-lapel {
-  font-size: var(--font-smallest);
-	letter-spacing: 0.015em;
-  text-align: end;
-  width: 4ch;
-}
-
 .cm-heading-marker {
+  --lapel-overlay-offset: 0.55rem;
+  position: absolute;
+  right: calc(100% + var(--lapel-overlay-offset));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2em;
+  padding: 0.08em 0.25em;
+  border-radius: var(--radius-s);
+  box-sizing: border-box;
+  font-size: var(--font-smallest);
+  line-height: 1.25;
+  letter-spacing: 0.015em;
+  color: var(--text-faint);
+  background: var(--background-primary);
   cursor: var(--cursor);
-	color: var(--text-faint);
-	display: inline-block;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.cm-line:has(> .cm-heading-marker) {
+  position: relative;
 }
 
 .cm-heading-marker.has-active-menu,
-.cm-heading-marker:hover {
+.cm-heading-marker:hover,
+.cm-heading-marker:focus-visible {
   color: var(--text-accent-hover);
+  outline: none;
 }
 
-.cm-heading-marker[data-level="1"] {
-  --heading-marker: "H1";
-}
+.cm-heading-marker[data-level="1"] { --heading-marker: "H1"; }
+.cm-heading-marker[data-level="2"] { --heading-marker: "H2"; }
+.cm-heading-marker[data-level="3"] { --heading-marker: "H3"; }
+.cm-heading-marker[data-level="4"] { --heading-marker: "H4"; }
+.cm-heading-marker[data-level="5"] { --heading-marker: "H5"; }
+.cm-heading-marker[data-level="6"] { --heading-marker: "H6"; }
 
-.cm-heading-marker[data-level="2"] {
-  --heading-marker: "H2";
-}
-
-.cm-heading-marker[data-level="3"] {
-  --heading-marker: "H3";
-}
-
-.cm-heading-marker[data-level="4"] {
-  --heading-marker: "H4";
-}
-
-.cm-heading-marker[data-level="5"] {
-  --heading-marker: "H5";
-}
-
-.cm-heading-marker[data-level="6"] {
-  --heading-marker: "H6";
-}
-
-.cm-heading-marker:before {
+.cm-heading-marker::before {
   content: var(--heading-marker);
+}
+
+/* Mobile/Android: keep the marker easy to tap without reserving a gutter column. */
+.is-mobile .cm-heading-marker {
+  --lapel-overlay-offset: 0.35rem;
+  min-width: 2.4em;
+  padding: 0.16em 0.3em;
+}
+
+/* Embedded table editors have very little horizontal room; hide overlays there. */
+.table-cell-wrapper .cm-heading-marker {
+  display: none;
 }
