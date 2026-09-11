@@ -1,164 +1,136 @@
-import { EditorView, ViewPlugin, ViewUpdate, gutter, GutterMarker } from "@codemirror/view";
+import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate, WidgetType } from "@codemirror/view";
 import { editorLivePreviewField, Menu } from "obsidian";
-import { syntaxTree, lineClassNodeProp} from "@codemirror/language";
-import { Prec, RangeSet, RangeSetBuilder } from "@codemirror/state";
+import { syntaxTree, lineClassNodeProp } from "@codemirror/language";
+import { RangeSetBuilder } from "@codemirror/state";
 
 const headingLevels = [1, 2, 3, 4, 5, 6];
 const MARKER_CSS_CLASS = "cm-heading-marker";
 
-class HeadingMarker extends GutterMarker {
+class HeadingMarkerWidget extends WidgetType {
   constructor(
     readonly view: EditorView,
     readonly headingLevel: number,
-    readonly from: number,
-    readonly to: number
+    readonly lineFrom: number
   ) {
     super();
   }
 
+  eq(other: HeadingMarkerWidget) {
+    return this.headingLevel === other.headingLevel && this.lineFrom === other.lineFrom;
+  }
+
   toDOM() {
-    const markerEl = createDiv({ cls: MARKER_CSS_CLASS });
+    const markerEl = document.createElement("span");
+    markerEl.className = MARKER_CSS_CLASS;
     markerEl.dataset.level = String(this.headingLevel);
+    markerEl.setAttribute("aria-label", `Heading ${this.headingLevel}. Activate to change heading level.`);
+    markerEl.setAttribute("role", "button");
+    markerEl.tabIndex = 0;
+
+    const openMenu = (evt: MouseEvent) => {
+      if (markerEl.classList.contains("has-active-menu")) return;
+      const menu = new Menu();
+      for (const level of headingLevels) {
+        menu.addItem((item) =>
+          item
+            .setIcon("lucide-heading-" + level)
+            .setTitle(`Heading ${level}`)
+            .setChecked(level === this.headingLevel)
+            .onClick(() => this.setHeadingLevel(level))
+        );
+      }
+      menu.addItem((item) =>
+        item
+          .setIcon("lucide-text")
+          .setTitle("Body")
+          .onClick(() => this.setHeadingLevel(0))
+      );
+      menu.setParentElement(markerEl).showAtMouseEvent(evt);
+    };
+
+    markerEl.addEventListener("click", (evt) => {
+      evt.preventDefault();
+      evt.stopPropagation();
+      openMenu(evt);
+    });
+    markerEl.addEventListener("mousedown", (evt) => {
+      evt.preventDefault();
+      evt.stopPropagation();
+    });
+    markerEl.addEventListener("keydown", (evt) => {
+      if (evt.key !== "Enter" && evt.key !== " ") return;
+      evt.preventDefault();
+      evt.stopPropagation();
+      const rect = markerEl.getBoundingClientRect();
+      openMenu(new MouseEvent("click", { clientX: rect.left, clientY: rect.bottom, bubbles: true }));
+    });
+
     return markerEl;
   }
 
-  // Prevent redrawing the same marker.
-  eq(other: HeadingMarker) {
-    return this.headingLevel === other.headingLevel;
+  private setHeadingLevel(level: number) {
+    const line = this.view.state.doc.lineAt(this.lineFrom);
+    const lineContents = line.text.replace(/^#{1,6}\s+/, "");
+    const insert = level === 0 ? lineContents : `${"#".repeat(level)} ${lineContents}`;
+    this.view.dispatch({
+      changes: { from: line.from, to: line.to, insert },
+    });
+  }
+
+  ignoreEvent() {
+    return false;
   }
 }
 
 interface HeadingMarkerPluginOpts {
-  showBeforeLineNumbers: boolean;
   showInSourceMode: boolean;
 }
 
 export function headingMarkerPlugin(opts: HeadingMarkerPluginOpts) {
-  const markers = ViewPlugin.fromClass(
+  return ViewPlugin.fromClass(
     class {
-      view: EditorView;
-      markers: RangeSet<HeadingMarker>;
+      decorations: DecorationSet;
 
       constructor(view: EditorView) {
-        this.view = view;
-        this.markers = this.shouldRender(view)
-          ? this.buildMarkers(view)
-          : RangeSet.empty as RangeSet<HeadingMarker>;
+        this.decorations = this.shouldRender(view) ? this.buildDecorations(view) : Decoration.none;
       }
 
       shouldRender(view: EditorView) {
         return opts.showInSourceMode || view.state.field(editorLivePreviewField);
       }
 
-      buildMarkers(view: EditorView) {
-        // Only draw the markers inside the viewport.
-        const {viewport} = view;
-        const builder = new RangeSetBuilder<HeadingMarker>();
-        syntaxTree(view.state).iterate({
-          from: viewport.from,
-          to: viewport.to,
-          enter: ({type, from, to}) => {
-            const headingExp = /header-(\d)$/.exec(type.prop(lineClassNodeProp) ?? "");
-            if (headingExp) {
+      buildDecorations(view: EditorView) {
+        const builder = new RangeSetBuilder<Decoration>();
+        for (const visibleRange of view.visibleRanges) {
+          syntaxTree(view.state).iterate({
+            from: visibleRange.from,
+            to: visibleRange.to,
+            enter: ({ type, from }) => {
+              const headingExp = /header-(\d)$/.exec(type.prop(lineClassNodeProp) ?? "");
+              if (!headingExp) return;
               const headingLevel = Number(headingExp[1]);
-              const d = new HeadingMarker(view, headingLevel, from, to);
-              builder.add(from, to, d);
-            }
-          },
-        });
-
+              const lineFrom = view.state.doc.lineAt(from).from;
+              const widget = Decoration.widget({
+                widget: new HeadingMarkerWidget(view, headingLevel, lineFrom),
+                side: -1,
+              });
+              builder.add(lineFrom, lineFrom, widget);
+            },
+          });
+        }
         return builder.finish();
       }
 
       update(update: ViewUpdate) {
         if (!this.shouldRender(update.view)) {
-          this.markers = RangeSet.empty as RangeSet<HeadingMarker>;
+          this.decorations = Decoration.none;
           return;
         }
-
-        // Rebuild only when the document or the viewport was changed.
-        if (update.docChanged || update.viewportChanged) {
-          this.markers = this.buildMarkers(this.view);
+        if (update.docChanged || update.viewportChanged || update.geometryChanged) {
+          this.decorations = this.buildDecorations(update.view);
         }
       }
-    }
+    },
+    { decorations: (value) => value.decorations }
   );
-
-  const gutterPrec = opts.showBeforeLineNumbers ? Prec.high : Prec.low;
-  return [
-    markers,
-    gutterPrec(
-      gutter({
-        class: "cm-lapel",
-        markers(view) {
-          return view.plugin(markers)?.markers || RangeSet.empty;
-        },
-        domEventHandlers: {
-          click: (view, block, evt) => {
-            if (!(evt instanceof MouseEvent)) return false;
-            if (evt.targetNode?.instanceOf(HTMLElement)) {
-              const el = evt.targetNode;
-              if (!el.hasClass(MARKER_CSS_CLASS)) return false;
-              if (el.hasClass('has-active-menu')) return true;
-
-              let currentLevel = 0;
-              view.plugin(markers)?.markers.between(block.from, block.to, (_f, _t, value) => {
-                currentLevel = value.headingLevel;
-              });
-
-              const menu = new Menu();
-              for (const level of headingLevels) {
-                menu.addItem((item) =>
-                  item
-                    .setIcon("lucide-heading-" + level)
-                    .setTitle(`Heading ${level}`)
-                    .setChecked(level === currentLevel)
-                    .onClick(() => {
-                      const line = view.state.doc.lineAt(block.from);
-                      const lineContents = line.text.replace(/^#{1,6} /, "");
-                      view.dispatch({
-                        changes: {
-                          from: line.from,
-                          to: line.to,
-                          insert: `${"#".repeat(level)} ${lineContents}`,
-                        },
-                      });
-                    })
-                );
-              }
-              menu.addItem((item) =>
-                item
-                  .setIcon("lucide-text")
-                  .setTitle("Body")
-                  .onClick(() => {
-                    const line = view.state.doc.lineAt(block.from);
-                    const lineContents = line.text.replace(/^#{1,6} /, "");
-                    view.dispatch({
-                      changes: {
-                        from: line.from,
-                        to: line.to,
-                        insert: lineContents,
-                      },
-                    });
-                  })
-              );
-
-              menu
-                .setParentElement(el)
-                .showAtMouseEvent(evt);
-              return true;
-            }
-            return false;
-          },
-          mousedown: (_view, _line, evt) => {
-            if (!(evt instanceof MouseEvent)) return false;
-            if (evt.targetNode?.instanceOf(HTMLElement)) {
-              return evt.targetNode.hasClass(MARKER_CSS_CLASS);
-            }
-            return false;
-          },
-        },
-      })
-    ),
-  ];
 }
