@@ -1,10 +1,10 @@
-name: Release plugin
+name: Build and export plugin ZIP
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -36,7 +36,7 @@ jobs:
       - name: Compile production build
         run: pnpm run build:ci
 
-      - name: Validate release files and version
+      - name: Validate compiled plugin
         shell: bash
         run: |
           set -euo pipefail
@@ -52,7 +52,7 @@ jobs:
             fi
           fi
 
-      - name: Create one installable ZIP
+      - name: Create single installable ZIP
         shell: bash
         run: |
           set -euo pipefail
@@ -61,21 +61,18 @@ jobs:
           cp main.js manifest.json styles.css dist/lapel-overlay/
           cd dist
           zip -r lapel-overlay.zip lapel-overlay
+          echo "ZIP contents:"
           unzip -l lapel-overlay.zip
 
-      - name: Upload Actions artifact
+      - name: Upload compiled ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: lapel-overlay-release
-          path: |
-            dist/lapel-overlay.zip
-            main.js
-            manifest.json
-            styles.css
+          name: lapel-overlay-compiled
+          path: dist/lapel-overlay.zip
           if-no-files-found: error
           retention-days: 30
 
-      - name: Create GitHub release
+      - name: Create GitHub release for version tag
         if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
