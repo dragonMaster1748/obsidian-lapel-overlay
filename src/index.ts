@@ -9,6 +9,7 @@ export default class LapelPlugin extends Plugin {
 
   async onload(): Promise<void> {
     await this.loadSettings();
+    this.applyAppearanceSettings();
     this.extensions.push(
       headingMarkerPlugin({
         showInSourceMode: this.settings.showInSourceMode,
@@ -18,13 +19,25 @@ export default class LapelPlugin extends Plugin {
     this.registerSettingsTab();
   }
 
+  onunload(): void {
+    document.body.style.removeProperty("--lapel-overlay-x");
+    document.body.style.removeProperty("--lapel-overlay-y");
+    document.body.style.removeProperty("--lapel-overlay-scale");
+  }
+
   async loadSettings() {
-    const data = (await this.loadData()) as LapelSettings | null;
+    const data = (await this.loadData()) as Partial<LapelSettings> | null;
     this.settings = { ...DEFAULT_SETTINGS, ...data };
   }
 
   private registerSettingsTab() {
     this.addSettingTab(new LapelSettingsTab(this.app, this));
+  }
+
+  private applyAppearanceSettings() {
+    document.body.style.setProperty("--lapel-overlay-x", `${this.settings.horizontalOffset}px`);
+    document.body.style.setProperty("--lapel-overlay-y", `${this.settings.verticalOffset}px`);
+    document.body.style.setProperty("--lapel-overlay-scale", `${this.settings.markerSize / 100}`);
   }
 
   public async updateSettings(
@@ -40,6 +53,7 @@ export default class LapelPlugin extends Plugin {
     }
 
     this.settings = newSettings;
+    this.applyAppearanceSettings();
     await this.saveData(this.settings);
   }
 }
