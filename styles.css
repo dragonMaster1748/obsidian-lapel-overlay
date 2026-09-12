@@ -17,7 +17,7 @@
   line-height: 1.25;
   letter-spacing: 0.015em;
   color: var(--text-faint);
-  background: var(--background-primary);
+  background: var(--lapel-overlay-background, var(--background-primary));
   cursor: var(--cursor);
   user-select: none;
   -webkit-user-select: none;
