@@ -66,7 +66,7 @@ export class LapelSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Marker size")
-      .setDesc("Change the size of the H1–H6 marker.")
+      .setDesc("Change the size of the h1–h6 marker.")
       .addSlider((slider) =>
         slider
           .setLimits(50, 200, 5)
