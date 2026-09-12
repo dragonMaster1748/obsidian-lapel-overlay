@@ -1,4 +1,4 @@
-name: Build and export plugin ZIP
+name: Build and export plugin
 
 on:
   workflow_dispatch:
@@ -52,25 +52,33 @@ jobs:
             fi
           fi
 
-      - name: Create single installable ZIP
+      - name: Assemble installable plugin
         shell: bash
         run: |
           set -euo pipefail
           rm -rf dist
           mkdir -p dist/lapel-overlay
           cp main.js manifest.json styles.css dist/lapel-overlay/
-          cd dist
-          zip -r lapel-overlay.zip lapel-overlay
-          echo "ZIP contents:"
-          unzip -l lapel-overlay.zip
+          echo "Plugin contents:"
+          find dist/lapel-overlay -maxdepth 1 -type f -printf '%f\n' | sort
 
-      - name: Upload compiled ZIP
+      # GitHub Actions artifacts are already downloaded as ZIP archives.
+      # Upload the plugin folder itself so the downloaded artifact contains the
+      # installable folder directly instead of a ZIP nested inside another ZIP.
+      - name: Upload installable plugin
         uses: actions/upload-artifact@v4
         with:
-          name: lapel-overlay-compiled
-          path: dist/lapel-overlay.zip
+          name: lapel-overlay
+          path: dist/lapel-overlay
           if-no-files-found: error
           retention-days: 30
+
+      - name: Create ZIP for tagged GitHub release
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          cd dist
+          zip -r lapel-overlay.zip lapel-overlay
 
       - name: Create GitHub release for version tag
         if: github.ref_type == 'tag'
