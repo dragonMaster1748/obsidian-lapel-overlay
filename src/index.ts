@@ -20,9 +20,10 @@ export default class LapelPlugin extends Plugin {
   }
 
   onunload(): void {
-    document.body.style.removeProperty("--lapel-overlay-x");
-    document.body.style.removeProperty("--lapel-overlay-y");
-    document.body.style.removeProperty("--lapel-overlay-scale");
+    const style = this.app.workspace.containerEl.style;
+    style.removeProperty("--lapel-overlay-x");
+    style.removeProperty("--lapel-overlay-y");
+    style.removeProperty("--lapel-overlay-scale");
   }
 
   async loadSettings() {
@@ -35,9 +36,10 @@ export default class LapelPlugin extends Plugin {
   }
 
   private applyAppearanceSettings() {
-    document.body.style.setProperty("--lapel-overlay-x", `${this.settings.horizontalOffset}px`);
-    document.body.style.setProperty("--lapel-overlay-y", `${this.settings.verticalOffset}px`);
-    document.body.style.setProperty("--lapel-overlay-scale", `${this.settings.markerSize / 100}`);
+    const style = this.app.workspace.containerEl.style;
+    style.setProperty("--lapel-overlay-x", `${this.settings.horizontalOffset}px`);
+    style.setProperty("--lapel-overlay-y", `${this.settings.verticalOffset}px`);
+    style.setProperty("--lapel-overlay-scale", `${this.settings.markerSize / 100}`);
   }
 
   public async updateSettings(
