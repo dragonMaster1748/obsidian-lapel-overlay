@@ -6,6 +6,7 @@ export interface LapelSettings {
   horizontalOffset: number;
   verticalOffset: number;
   markerSize: number;
+  transparentBackground: boolean;
 }
 
 export const DEFAULT_SETTINGS: LapelSettings = {
@@ -13,6 +14,7 @@ export const DEFAULT_SETTINGS: LapelSettings = {
   horizontalOffset: 0,
   verticalOffset: 0,
   markerSize: 100,
+  transparentBackground: false,
 };
 
 export class LapelSettingsTab extends PluginSettingTab {
@@ -78,14 +80,26 @@ export class LapelSettingsTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName("Transparent background")
+      .setDesc("Remove the background behind heading markers.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.transparentBackground)
+          .onChange(async (value) => {
+            await this.plugin.updateSettings(() => ({ transparentBackground: value }));
+          })
+      );
+
+    new Setting(containerEl)
       .setName("Reset overlay appearance")
-      .setDesc("Restore the default marker position and size.")
+      .setDesc("Restore the default marker position, size, and background.")
       .addButton((button) =>
         button.setButtonText("Reset").onClick(async () => {
           await this.plugin.updateSettings(() => ({
             horizontalOffset: DEFAULT_SETTINGS.horizontalOffset,
             verticalOffset: DEFAULT_SETTINGS.verticalOffset,
             markerSize: DEFAULT_SETTINGS.markerSize,
+            transparentBackground: DEFAULT_SETTINGS.transparentBackground,
           }));
           this.display();
         })
