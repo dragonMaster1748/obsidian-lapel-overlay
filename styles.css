@@ -3,7 +3,8 @@
   position: absolute;
   right: calc(100% + var(--lapel-overlay-offset));
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate(var(--lapel-overlay-x, 0px), calc(-50% + var(--lapel-overlay-y, 0px))) scale(var(--lapel-overlay-scale, 1));
+  transform-origin: center;
   z-index: 5;
   display: inline-flex;
   align-items: center;
