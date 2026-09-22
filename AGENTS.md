@@ -78,3 +78,23 @@ Avoid:
 - `tmp`, `Qf`, `Cleanup` — not descriptive (these exist in sibling repos but should not be repeated here)
 - `Update README` — be specific: `docs: Document gutter position setting`
 - Mixing a release bump with a code change in one commit
+
+## Scope and token discipline
+
+- Make the smallest change that fulfills the user's request. Read only relevant files and existing project guidance.
+- Keep GitHub as the source of truth. Commit requested project changes to the relevant repository and branch; do not substitute ZIPs, parallel copies, or uncommitted local work for repository changes.
+- Preserve existing behavior and release conventions unless the request requires changes. Follow the commit and release rules above.
+- Avoid unrelated refactors, cleanup, dependency changes, scaffolding, and extra documentation. Mention worthwhile unrelated ideas briefly without implementing them.
+- Avoid repeated investigation and checks that establish the same fact. Stop when the requested work is complete.
+
+## Focused validation
+
+- Validate only what is useful for the requested change, using existing targeted checks and workflows where applicable.
+- Add or update tests when behavior needs regression coverage, an existing test must change, or the user requests tests.
+- Avoid installing large toolchains, creating alternate environments, or reproducing CI locally solely for routine confirmation.
+- For documentation-only changes, inspect the final text; do not trigger an application build solely to validate documentation.
+- Report what was checked and any relevant check that could not run. Do not claim a build passed unless it did.
+
+## Completion
+
+Inspect relevant files, make the requested change, run the minimum useful check, report the result, and stop.
