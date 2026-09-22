@@ -98,3 +98,14 @@ Avoid:
 ## Completion
 
 Inspect relevant files, make the requested change, run the minimum useful check, report the result, and stop.
+
+## MCP request metadata failures
+
+If a tool returns `Invalid MCP request metadata`:
+
+- Do not assume that GitHub, the repository, or another external service denied access. Treat the error first as a possible conversation/session-level MCP integration failure.
+- Make at most one small, read-only retry when it can distinguish a transient failure from a session-wide MCP failure. If the same error occurs again, stop tool use immediately.
+- Do not install or reconnect plugins, switch to browser automation, reconstruct repository files manually, or attempt multiple alternative access paths as workarounds.
+- Do not consume the rest of the session investigating or retrying this error. Report the blocker and preserve the user's remaining token allowance.
+- Do not resume MCP work in the affected conversation unless the user explicitly requests another attempt. Recommend using a new conversation or waiting for a publicly documented fix.
+- Handle explicit authentication, permission, rate-limit, context-limit, and quota errors according to their actual messages; do not classify those distinct errors as MCP metadata failures.
