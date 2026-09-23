@@ -99,6 +99,12 @@ Avoid:
 
 Inspect relevant files, make the requested change, run the minimum useful check, report the result, and stop.
 
+## Version and changelog for plugin updates
+
+- Give each user-visible plugin change or fix a new version before publishing it. Follow the dedicated `chore(release): <version>` commit convention above; keep `manifest.json`, `package.json`, and `versions.json` where applicable in sync. Do not publish new behavior under an unchanged version.
+- Record the actual committed change in `CHANGELOG.md` as part of the release process. Use the repository's existing changelog generation convention where applicable; verify that the resulting release entry describes the change and any related fixes. Keep feature/fix commits separate from the dedicated version-metadata release commit.
+- Documentation-only and agent-instruction changes do not require a plugin version bump or release.
+
 ## MCP request metadata failures
 
 If a tool returns `Invalid MCP request metadata`:
